@@ -2,7 +2,12 @@ import Component from '@ember/component';
 import { alias } from '@ember/object/computed';
 import { isPresent } from '@ember/utils';
 import { assign } from '@ember/polyfills';
+import Ember from 'ember'
 import Configuration from '../configuration';
+import getGrecaptcha from '../utils/get-grecaptcha';
+
+// eslint-disable-next-line ember/no-ember-testing-in-module-scope
+const { testing: isTesting } = Ember
 
 export default Component.extend({
 
@@ -13,6 +18,14 @@ export default Component.extend({
   tabindex: alias('tabIndex'),
 
   renderReCaptcha() {
+    /*
+     * Google reCaptcha is rendered at init in the original component and it may break tests.
+     * Here, we voluntarily prevent rendering because we do not want to test reCaptcha.
+     */
+    if (isTesting) {
+      return
+    }
+
     let properties = this.getProperties(
       'sitekey',
       'theme',
@@ -26,7 +39,7 @@ export default Component.extend({
       callback: this.get('successCallback').bind(this),
       'expired-callback': this.get('expiredCallback').bind(this),
     });
-    let widgetId = window.grecaptcha.render(this.get('element'), parameters);
+    let widgetId = getGrecaptcha().render(this.get('element'), parameters);
     this.set('widgetId', widgetId);
     this.set('ref', this);
     this.renderCallback()
@@ -34,7 +47,7 @@ export default Component.extend({
 
   resetReCaptcha() {
     if (isPresent(this.get('widgetId'))) {
-      window.grecaptcha.reset(this.get('widgetId'));
+      getGrecaptcha().reset(this.get('widgetId'));
     }
   },
 
